@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Fake oder Fakt / Würdest du klicken? — Swipe</title>
+  <base href="./" />
+  <style>
+    :root{
+      --tinder-pink:#fd267a; --tinder-coral:#ff6036;
+      --text:#111827; --muted:#6b7280;
+      --card-radius:28px; --bar-h:56px;
+
+      --good-green:#22c55e;
+      --good-green-strong:rgba(34,197,94,.96);
+      --bad-pink-strong:rgba(253,38,122,.96);
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
+    body{
+      margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      color:var(--text);min-height:100dvh;display:flex;flex-direction:column;overflow:hidden;
+      background:
+        radial-gradient(1200px 600px at -10% -10%, #ffe3df 0%, transparent 60%),
+        radial-gradient(1200px 600px at 110% -10%, #ffd7ec 0%, transparent 60%),
+        radial-gradient(1200px 600px at 50% 120%, #ffe6f1 0%, transparent 60%),
+        #f7f7f8;
+    }
+
+    .top-bar{height:var(--bar-h);display:flex;align-items:center;justify-content:space-between;padding:0 14px}
+    .top-left,.top-right{display:flex;gap:12px;align-items:center}
+    .icon-btn{width:36px;height:36px;border-radius:12px;border:0;background:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.08);font-size:18px}
+    .brand{font-weight:900;letter-spacing:.2px;background:linear-gradient(135deg,var(--tinder-pink),var(--tinder-coral));-webkit-background-clip:text;background-clip:text;color:transparent;font-size:16px}
+    .progress{font-size:13px;font-weight:700;color:#6b7280;min-width:110px;text-align:right}
+
+    .stage{position:relative;flex:1;display:grid;place-items:center;padding:max(env(safe-area-inset-top),12px) max(env(safe-area-inset-right),12px) max(env(safe-area-inset-bottom),12px) max(env(safe-area-inset-left),12px);overflow:hidden}
+
+    .card-wrap{width:min(92vw,560px);aspect-ratio:3/4.2;position:relative;filter:drop-shadow(0 24px 60px rgba(0,0,0,.18));touch-action:none;will-change:transform;transition:transform .2s ease,opacity .4s ease}
+    .card-wrap::before{content:"";position:absolute;inset:0;padding:2px;border-radius:calc(var(--card-radius) + 2px);background:linear-gradient(135deg,var(--tinder-pink),var(--tinder-coral));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;z-index:0}
+    .card{position:absolute;inset:0;background:rgba(255,255,255,.88);backdrop-filter:blur(10px) saturate(1.06);border-radius:var(--card-radius);border:1px solid rgba(255,255,255,.7);display:flex;flex-direction:column;overflow:hidden;z-index:1}
+    .band{height:clamp(10px,1.8vw,12px);background:linear-gradient(135deg,var(--tinder-pink),var(--tinder-coral))}
+    .content{display:flex;flex-direction:column;gap:clamp(10px,2.4vw,16px);padding:clamp(18px,3vw,26px);flex:1}
+    .meta{text-transform:uppercase;font-weight:800;letter-spacing:.08em;color:var(--muted);font-size:clamp(11px,2.2vw,13px)}
+    .question{font-size:clamp(22px,5.2vw,30px);line-height:1.25;font-weight:900;letter-spacing:.2px;word-break:break-word;position:relative;padding-left:clamp(6px,1vw,10px)}
+    .question::before{content:"";position:absolute;left:0;top:.2em;bottom:.2em;width:3px;border-radius:2px;background:linear-gradient(180deg,var(--tinder-pink),var(--tinder-coral));opacity:.85}
+    .rule{margin-top:auto;height:1px;background:linear-gradient(90deg,rgba(0,0,0,.06),rgba(0,0,0,0))}
+
+    .label-drag{
+      position:absolute;top:50%;
+      transform:translate(-50%,-50%);
+      font-size:clamp(28px,8vw,52px);
+      font-weight:1000;padding:10px 16px;border:5px solid;border-radius:16px;
+      opacity:0; display:none;
+      pointer-events:none;background:rgba(255,255,255,.9);
+      backdrop-filter:blur(6px);text-shadow:0 1px 0 rgba(255,255,255,.7);
+      z-index:3;box-shadow:0 8px 24px rgba(0,0,0,.12)
+    }
+    .label-left{left:26%;color:var(--tinder-coral);border-color:var(--tinder-coral);transform:translate(-50%,-50%) rotate(-10deg)}
+    .label-right{left:74%;color:var(--tinder-pink);border-color:var(--tinder-pink);transform:translate(-50%,-50%) rotate(10deg)}
+
+    .button-bar{position:absolute;inset-inline:0;bottom:max(env(safe-area-inset-bottom),10px);display:flex;align-items:center;justify-content:center;gap:clamp(16px,6vw,26px);pointer-events:none}
+    .circle-button{width:clamp(60px,13vw,74px);height:clamp(60px,13vw,74px);border-radius:999px;border:0;background:#fff;box-shadow:0 8px 18px rgba(0,0,0,.10);font-size:clamp(20px,5.5vw,28px);cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;pointer-events:auto;display:grid;place-items:center}
+    .circle-button:active{transform:scale(.94);box-shadow:0 4px 10px rgba(0,0,0,.14)}
+    .btn-no{color:var(--tinder-coral)} .btn-yes{color:var(--tinder-pink)} .btn-reset{color:#9ca3af}
+
+    .overlay{
+      position:fixed; inset:0; left:0; top:0; width:100vw; height:100vh;
+      display:none; z-index:9999; background:transparent;
+    }
+    .overlay.show{display:flex;align-items:center;justify-content:center}
+    .overlay.show.correct{background:var(--good-green-strong)}
+    .overlay.show.wrong{background:var(--bad-pink-strong)}
+    .overlay .box{width:min(92vw,560px);max-width:560px;text-align:center;color:#fff;padding:24px}
+    .overlay h2{font-size:clamp(26px,6vw,36px);margin:0 0 10px}
+    .overlay p{font-size:clamp(14px,3.6vw,18px);margin:0 0 18px;white-space:pre-wrap}
+    .next-btn{padding:10px 18px;font-size:clamp(14px,3.8vw,16px);background:#fff;color:#111827;border:0;border-radius:12px;cursor:pointer}
+
+    .score-display{display:none;text-align:center;padding:16px;font-size:clamp(16px,4.2vw,20px)}
+    .score-display strong{font-weight:800}
+
+    .settings{position:fixed;top:var(--bar-h);right:10px;width:min(92vw,340px);background:#fff;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,.16);border:1px solid #eee;padding:14px;display:none;z-index:30}
+    .settings h3{margin:0 0 10px;font-size:16px;font-weight:900;background:linear-gradient(135deg,var(--tinder-pink),var(--tinder-coral));-webkit-background-clip:text;background-clip:text;color:transparent}
+    .settings .row{display:flex;gap:10px;align-items:center;padding:8px 0}
+    .settings label{font-size:14px;color:var(--text);font-weight:600}
+    .settings small{display:block;color:#6b7280;margin-top:2px}
+
+    .media{width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:#eef0f3;display:grid;place-items:center;border:1px solid rgba(0,0,0,.06)}
+    .media img{width:100%;height:100%;object-fit:cover;display:block}
+
+    @media (min-width:900px){.stage{padding:24px}}
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <div class="top-left">
+      <button class="icon-btn" id="btnSettings" aria-label="Einstellungen">⚙️</button>
+      <div class="brand" id="brandTitle">Würdest du klicken?</div>
+    </div>
+    <div class="top-right">
+      <div class="progress" id="progressText">Frage – von –</div>
+      <button class="icon-btn" id="btnChat" aria-label="Chat">💬</button>
+    </div>
+  </div>
+
+  <div class="settings" id="settingsPanel">
+    <h3>Spiel auswählen</h3>
+    <div class="row"><input type="radio" name="mode" id="modeClick" value="click" />
+      <label for="modeClick">Würdest du klicken?<small>Phishing & Social-Engineering Situationen</small></label></div>
+    <div class="row"><input type="radio" name="mode" id="modeFact" value="fact" />
+      <label for="modeFact">Fake oder Fakt<small>Wahr/Falsch Aussagen zu Sicherheit</small></label></div>
+  </div>
+
+  <div class="stage">
+    <div class="card-wrap" id="cardWrap">
+      <div class="label-drag label-left" id="leftLabel"></div>
+      <div class="label-drag label-right" id="rightLabel"></div>
+      <div class="card" id="card">
+        <div class="band"></div>
+        <div class="content">
+          <div class="meta" id="category">Lade…</div>
+          <div class="media">
+            <img id="qImage" alt="Bild zur Frage" />
+          </div>
+          <div class="question" id="question">...</div>
+          <div class="rule"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="button-bar">
+      <button class="circle-button btn-reset" id="btnReset">↺</button>
+      <button class="circle-button btn-no" id="btnNo">❌</button>
+      <button class="circle-button btn-yes" id="btnYes">❤️</button>
+    </div>
+  </div>
+
+  <div class="score-display" id="finalScore">
+    <p>Super! Du hast <strong id="scoreCount"></strong> von <strong id="totalCount"></strong> Punkten erreicht.</p>
+    <button class="next-btn" id="btnReplay">Nochmal spielen</button>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="box">
+      <h2 id="resultTitle">Richtig!</h2>
+      <p id="resultInfo"></p>
+      <button class="next-btn" id="btnNext">Weiter</button>
+    </div>
+  </div>
+
+  <script>
+    /* Question banks (unchanged content) */
+    const clickQuestions = [
+      {category:"Würdest du klicken?",text:"Ein Mitschüler schickt dir per WhatsApp eine Nachricht",correct:false,infoYes:`Du tappst in eine der häufigsten Phishing-Fallen. Solche Links führen oft auf gefälschte Login-Seiten oder laden Malware herunter. Lieber erstmal persönlich nachfragen, ob die Nachricht wirklich von deinem Freund kommt.`,infoNo:`Sehr gut, du hast kritisch reagiert. Solche neugierweckenden Nachrichten sind oft Fakes. Bei Unsicherheit: lieber nicht klicken und die Person direkt ansprechen.`,img:"img/peinlich.png"},
+      {category:"Würdest du klicken?",text:"Du bekommst eine Nachricht auf Instagram",correct:false,infoYes:`Klingt zu schön, um wahr zu sein? Dann ist es das vemutlich auch. Fake-Gewinnspiele sammeln Daten oder leiten auf Abo-Fallen weiter. Gewinne, ohne mitgemacht zu haben, gibt es nicht.`,infoNo:`Richtig entschieden. Solche Gewinnversprechen sind meist Abzocke. Bleib wachsam und gib niemals persönliche Daten leichtfertig heraus.`,img:"img/gewonnen.png"},
+      {category:"Würdest du klicken?",text:"Du bekommst eine E-Mail vom Kundensupport mit einem Link.",correct:false,infoYes:`Du hast damit möglicherweise Zugangsdaten oder persönliche Infos preisgegeben. Solche Mails sind oft Phishing-Versuche, nicht draufklicken, nicht antworten!`,infoNo:`Gut gemacht. Seriöse Anbieter fragen nie per Mail nach Passwörtern. Wenn du unsicher bist: direkt im echten Kundenkonto nachsehen oder den Support selbst kontaktieren.`,img:"img/Kundensupport.png"},
+      {category:"Würdest du klicken?",text:"Du bekommst ungefragt ein Nacktbild von einer anderen Person zugesendet.",correct:false,infoYes:`Das kann bereits illegal sein, insbesondere bei Minderjährigen. Solche Inhalte darfst du weder speichern noch weiterleiten. Sprich mit einer Vertrauensperson oder der Polizei.`,infoNo:`Sehr gut, du schützt dich und andere. Solche Bilder gehören gemeldet und sofort gelöscht. Du verhältst dich verantwortungsbewusst.`,img:"img/intime_bilder.png"},
+      {category:"Würdest du klicken?",text:"Beim Surfen im Internet ploppt ein Fenster auf",correct:false,infoYes:`Das ist ein typischer Trick. Wer klickt, lädt oft Schadsoftware oder eine Fake-App herunter.`,infoNo:`Gut gemacht. Solche Warnungen einfach schliessen, dein Handy hat meist gar kein Problem.`,img:"img/Viren.png"},
+      {category:"Würdest du klicken?",text:"Du siehst eine Anzeige auf TikTok",correct:false,infoYes:`Vorsicht! Das kann ein Fake-Shop sein. Du zahlst, bekommst aber minderwertige Waren oder gar nichts und deine Daten landen womöglich bei Betrügern.`,infoNo:`Richtig reagiert. Günstig ≠ sicher. Immer Shop-Bewertungen und Impressum prüfen.`,img:"img/tiktokshop.png"},
+      {category:"Würdest du klicken?",text:"Ein Freund schickt dir einen Link.",correct:false,infoYes:`Du nutzt eine illegale Streaming-Seite, oft verbunden mit rechtlichen Risiken und Virengefahr.`,infoNo:`Richtig entschieden. Lieber legale Angebote nutzen. Das ist sicher und ohne Ärger.`,img:"img/film.png"},
+      {category:"Würdest du klicken?",text:"Eine E-Mail behauptet, du hast etwas bestellt und sie senden dir die PDF-Rechnung als Anhang.",correct:false,infoYes:`Anhänge in unbekannten Mails können Viren oder Trojaner enthalten. Du könntest dein Gerät infizieren.`,infoNo:`Sehr gut. Rechnungen nur öffnen, wenn du den Absender kennst und wirklich etwas bestellt hast.`,img:"img/pdf.png"},
+      {category:"Würdest du klicken?",text:"Ein „Schulkollege“ will dich auf Snapchat adden, komischer Name, aber bekanntes Profilbild",correct:false,infoYes:`Achtung, Fake-Profile mit gestohlenen Bildern sind häufig. Sei lieber misstrauisch.`,infoNo:`Gute Entscheidung. Erst verifizieren, ob die Person echt ist, zum Beispiel indem du sie persönlich fragst.`,img:"img/Snapchat.png"},
+      {category:"Würdest du klicken?",text:"Jemand hat in der Schule einen Zettel mit einem QR-Code aufgehängt.",correct:false,infoYes:`Du hast keine Kontrolle, wohin der QR-Code führt, das kann eine Fake-Seite oder eine App-Falle sein. Scanne nur Codes aus vertrauenswürdigen Quellen.`,infoNo:`Top, QR-Codes können manipuliert werden. Scanne nur Codes aus vertrauenswürdigen Quellen.`,img:"img/QR.png"},
+      {category:"Würdest du klicken?",text:"Du bekommst eine Nachricht.",correct:false,infoYes:`Sei vorsichtig! Lehrkräfte kontaktieren Schüler/innen normalerweise nicht privat über Instagram. Das kann ein Fake-Profil sein, das du im besten Fall sofort meldest.`,infoNo:`Richtig so. Bei seltsamen Nachrichten von Erwachsenen: Vertrauensperson einschalten und nicht antworten.`,img:"img/Lehrer.png"},
+      {category:"Würdest du klicken?",text:"Du bekommst eine Mail.",correct:false,infoYes:`Du fällst auf einen klassischen Betrugsversuch herein. Die SBB verschickt solche Mails nicht mit Drohungen und Linkzwang.`,infoNo:`Richtige Wahl. Im Zweifel: direkt online über dein SwissPass-Konto einloggen und dort den Status prüfen.`,img:"img/Swisspass.png"},
+      {category:"Würdest du klicken?",text:"Du hast eine neue App gefunden, die dich auffordert, Selfies hochzuladen.",correct:false,infoYes:`Du gibst sensible biometrische Daten an eine unbekannte Plattform und weisst nicht, was mit deinen Bildern passiert.`,infoNo:`Sehr klug. Bevor du persönliche Daten teilst, prüfe, ob die Plattform seriös ist.`,img:"img/anime.png"},
+      {category:"Würdest du klicken?",text:"Ein TikTok-Link verspricht: „So siehst du in 50 Jahren aus!“. Du sollst ein Foto hochladen.",correct:false,infoYes:`Datenschutz-Problem: Deine Bilder landen vielleicht auf Servern im Ausland. Du gibst persönliche Infos aus der Hand.`,infoNo:`Gute Entscheidung. Bei solchen Trends lohnt es sich, vorher zu prüfen, wer dahintersteckt.`,img:"img/filter.png"},
+      {category:"Würdest du klicken?",text:"Du siehst eine Instagram-Werbeanzeige.",correct:false,infoYes:`Vorsicht, du wirst möglicherweise als Geldkurier missbraucht. Betrüger/innen nutzen dich, um kriminelle Gelder weiterzuleiten. Das ist Geldwäscherei und du kannst strafrechtlich belangt werden.`,infoNo:`Gute Entscheidung. Kein echter Arbeitgeber wirbt mit anonymen Anzeigen für „Geldtransfers“. `,img:"img/jung.png"},
+      {category:"Würdest du klicken?",text:"Du willst bei einem Parkplatz die Parkgebühr bezahlen. Der Automat ist ausser Betrieb, aber daneben hängt ein laminiertes Schild.",correct:false,infoYes:`Du könntest auf einen gefälschten QR-Code hereingefallen sein.\nBetrüger überkleben echte Hinweise mit eigenen TWINT-Links. Das Geld landet dann direkt bei ihnen, nicht beim Hofladen, Parkplatz oder Veranstalter.`,infoNo:`Sehr aufmerksam. Gerade bei freistehenden oder improvisierten QR-Codes lohnt sich Misstrauen. Vertrau nur Codes, die offiziell angebracht, klar beschriftet und nachvollziehbar sind. Im Zweifel: nicht scannen, lieber bar zahlen oder nachfragen.`,img:"img/parkplatz.png"},
+      {category:"Würdest du klicken?",text:"Du stösst in einem Online-Forum auf einen Beitrag.",correct:false,infoYes:`Du begehst möglicherweise eine Straftat, denn viele Waffenarten, Schlagstöcke, Springmesser, Wurfsterne, Pfeffersprays ohne Bewilligung oder mit falscher Kennzeichnung sind in der Schweiz verboten.\nSchon der Versuch der Einfuhr reicht und du machst dich strafbar, auch wenn du „nur für dich“ etwas bestellen wolltest.`,infoNo:`Gute Entscheidung. In der Schweiz gelten klare und strenge Waffengesetze, auch für Jugendliche. Viele Waffenarten, Schlagstöcke, Springmesser, Wurfsterne, Pfeffersprays ohne Bewilligung oder mit falscher Kennzeichnung sind in der Schweiz verboten.\nSchon der Versuch der Einfuhr reicht und du machst dich strafbar, auch wenn du „nur für dich“ etwas bestellen wolltest.`,img:"img/selbstschutz.png"},
+      {category:"Würdest du klicken?",text:"Du bist in einer Fitnessgruppe auf Snapchat oder Instagram unterwegs. Ein User schickt eine Nachricht.",correct:false,infoYes:`Du riskierst gesundheitliche Schäden. Viele dieser Mittel sind nicht geprüft, enthalten illegale Substanzen oder werden unter falschen Angaben verkauft.\nUnd: In der Schweiz brauchst du für viele muskelsteigernde Mittel ein ärztliches Rezept. Schon die Bestellung oder Einfuhr aus dem Ausland kann strafbar sein z. B. bei anabolen Steroiden.`,infoNo:`Starke Entscheidung, im wahrsten Sinne.\nWer dir schnelle Muskeln ohne Training oder Rezept verspricht, will meist dein Geld, nicht deine Gesundheit.\nFinger weg von dubiosen Online-Shops. Informier dich lieber seriös, z. B. bei Ärzt/innen oder Apotheken.`,img:"img/sportgruppe.png"}
+    ];
+
+    const factQuestions = [
+      {category:"Fake oder Fakt",text:"Wenn ich mein Instagram-Profil auf privat stelle, kann niemand mehr meine alten Beiträge sehen. Auch nicht die Leute, die mir früher gefolgt sind.",correct:false,info:"Alte Follower behalten den Zugriff, bis sie entfernt werden.",img:"img/insta_privat.png"},
+      {category:"Fake oder Fakt",text:"Wenn ich ein Foto, das ich auf TikTok gepostet habe, lösche, ist es tatsächlich aus dem Internet verschwunden.",correct:false,info:"Gelöschte Inhalte können auf Servern bleiben oder bereits gespeichert worden sein.",img:"img/TikTok.png"},
+      {category:"Fake oder Fakt",text:"Ich darf Bilder von meinen Freunden posten, ohne sie zu fragen, solange wir auf einer Party waren.",correct:false,info:"Persönlichkeitsrecht: Veröffentlichungen benötigen Zustimmung.",img:"img/friends.png"},
+      {category:"Fake oder Fakt",text:"Ein Passwort mit meinem Geburtsdatum ist sicher, solange es lang genug ist.",correct:false,info:"Persönliche Daten sind leicht zu erraten, besonders für Leute aus dem Umfeld.",img:"img/passwort.png"},
+      {category:"Fake oder Fakt",text:"Zwei-Faktor-Authentifizierung macht meinen Account auch dann sicher, wenn jemand mein Passwort kennt.",correct:true,info:"Deutlich erhöhter Schutz durch zweite Sicherheitsebene.",img:"img/zweifaktor.png"},
+      {category:"Fake oder Fakt",text:"Wenn ich jemanden online beleidige, ist das nicht strafbar, solange ich keinen echten Namen verwende.",correct:false,info:"Beleidigung bleibt strafbar, IP-Adressen sind rückverfolgbar.",img:"img/Hass.png"},
+      {category:"Fake oder Fakt",text:"Mein Online-Spielpartner, den ich schon über ein Jahr kenne, ist bestimmt echt 15 Jahre alt.",correct:false,info:"Identitäten sind online schwer überprüfbar. Vorsicht bei privaten Infos, die du preisgibst.",img:"img/spieler.png"},
+      {category:"Fake oder Fakt",text:"Ein Spiel, das kostenlos ist, kann keine Schadsoftware enthalten.",correct:false,info:"Freeware ist nicht automatisch sicher. Mache Downloads nur von offiziellen Seiten.",img:"img/spiel_gratis.png"},
+      {category:"Fake oder Fakt",text:"Memes mit echten Personen gelten immer als Satire und sind erlaubt.",correct:false,info:"Wenn Personen blossgestellt oder beleidigt werden, kann es strafbar sein.",img:"img/memes.png"},
+      {category:"Fake oder Fakt",text:"Je öfter ich eine Nachricht sehe, desto wahrscheinlicher ist es, dass sie wahr ist.",correct:false,info:"Wiederholung verstärkt nur den Eindruck, nicht die Wahrheit.",img:"img/Nachrichten_viel.png"},
+      {category:"Fake oder Fakt",text:"Ein Login über Google oder Apple ist oft sicherer als ein eigenes Passwort.",correct:true,info:"Single-Sign-On mit 2-Faktor-Authentifizierung ist oft besser als schwache Einzelpasswörter.",img:"img/google_apple.png"},
+      {category:"Fake oder Fakt",text:"Wenn jemand intime Bilder von mir hat, darf er mich nicht unter Druck setzen, sonst macht er sich strafbar.",correct:true,info:"Das ist Erpressung und/oder Verletzung des höchstpersönlichen Lebensbereichs und entsprechend strafbar.",img:"img/intime_bilder.png"},
+      {category:"Fake oder Fakt",text:"Im Internet kann ich völlig anonym bleiben.",correct:false,info:"Absolute Anonymität gibt es nicht, IP-Adressen, Geräte-IDs oder Metadaten lassen Rückschlüsse zu.",img:"img/Anonym.png"},
+      {category:"Fake oder Fakt",text:"Wenn ich ein KI-Bild auf Social Media poste, muss ich angeben, dass es nicht echt ist.",correct:true,info:"Es gibt keine einheitliche Pflicht, aber Plattformen und EU-Richtlinien zielen auf mehr Transparenz.",img:"img/KI.png"},
+      {category:"Fake oder Fakt",text:"Man erkennt Deepfakes immer an Fehlern, z. B. den Augen.",correct:false,info:"Früher ja. Heute können Deepfakes täuschend echt sein. Fehler sind kein zuverlässiger Indikator mehr.",img:"img/auge.png"},
+      {category:"Fake oder Fakt",text:"Wenn ich bei einem Fake-Shop bestelle, bin ich selbst schuld und bekomme kein Geld zurück.",correct:false,info:"Bei Zahlung per Kreditkarte oder PayPal gibt es oft Käuferschutz. Aber: Anzeige und Nachweis sind nötig.",img:"img/schuld_shop.png"},
+      {category:"Fake oder Fakt",text:"Wenn ich jemanden in einem Onlinespiel beschimpfe, kann das rechtliche Folgen haben.",correct:true,info:"Auch im virtuellen Raum gelten Beleidigungstatbestände.",img:"img/recht_schimpfen.png"},
+      {category:"Fake oder Fakt",text:"Wenn ich aus Spass ein Bild fälsche, das jemand anderen blossstellt, ist das keine Straftat.",correct:false,info:"Das kann je nach Inhalt üble Nachrede, Verleumdung oder Verletzung des Persönlichkeitsrechts sein.",img:"img/deepfake.png"},
+      {category:"Fake oder Fakt",text:"Mein Instagram-Account wurde gehackt, weil ich ein WLAN ohne Passwort benutzt habe.",correct:true,info:"Wer ein öffentliches WLAN verwendet, setzt sich der Gefahr aus, dass seine Daten eingesehen oder Zugangsdaten gestohlen werden.",img:"img/wifi.png"},
+      {category:"Fake oder Fakt",text:"Wenn ich online Tickets für ein Festival kaufe, bin ich auf der sicheren Seite. Das ist ja eine bekannte Veranstaltung.",correct:false,info:"Es könnte sich auch um gefälschte Shops oder bei Zweitverkäufen über Social Media um einen Betrug handeln. Die Quelle muss immer geprüft werden.",img:"img/musik.png"},
+      {category:"Fake oder Fakt",text:"Es ist legal, ein Passwort mit jemandem zu teilen, wenn ich es freiwillig mache.",correct:false,info:"Ein Passwort ist persönlich und die Weitergabe nicht empfehlenswert. Bei Plattformen mit AGB-Verbot (z. B. Netflix) ist es vertraglich untersagt, bei Firmenzugängen kann es arbeitsrechtliche oder strafrechtliche Konsequenzen geben.",img:"img/share.png"},
+      {category:"Fake oder Fakt",text:"Ich darf Screenshots von einem privaten Chat machen und öffentlich posten, wenn ich anonymisiere.",correct:false,info:"Auch anonymisierte Inhalte können Persönlichkeitsrechte verletzen, besonders bei privaten Inhalten ohne Zustimmung.",img:"img/screenshots.png"}
+    ];
+
+    /* Image handling */
+    const qImage = document.getElementById("qImage");
+    const IMG_PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eef0f3" offset="0"/><stop stop-color="#e6e9ee" offset="1"/></linearGradient></defs><rect width="1200" height="675" fill="url(#g)"/><g fill="#9aa3af" transform="translate(600 338)"><circle r="90" fill="none" stroke="#c7cdd6" stroke-width="10"/><path d="M-170,150 h340 v-40 l-90,-90 -90,90 -70,-70 -90,90 z" fill="#c7cdd6"/></g></svg>`);
+    ;[clickQuestions, factQuestions].forEach(list => list.forEach(q => { if (!q.img) q.img = IMG_PLACEHOLDER; }));
+    function setLocalImage(el, src){
+      const clean = (src || '').toString().replace(/^(\.\/)+/, '').replace(/^\/+/, '');
+      const finalSrc = './' + clean;
+      el.onerror = () => { el.onerror = null; el.src = IMG_PLACEHOLDER; };
+      el.removeAttribute('src');
+      el.src = finalSrc;
+    }
+
+    /* Mode persistence */
+    const STORAGE_KEY = 'swipeGameMode'; // 'click' | 'fact'
+    function loadSavedMode(){ try{ const m=localStorage.getItem(STORAGE_KEY); return (m==='click'||m==='fact')?m:null; }catch{ return null; } }
+    function saveMode(mode){ try{ localStorage.setItem(STORAGE_KEY, mode);}catch{} }
+
+    /* State */
+    let gameMode = "click";
+    let questions = [];
+    let index = 0;
+    let score = 0;
+    let startX = 0;
+    let canSwipe = true;
+    let animating = false;
+
+    /* Inactivity reset */
+    const INACT_MS = 60000;
+    let inactivityTimer = null;
+    function startInactivityTimer(){
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        resetGame(); // same mode, fresh round
+      }, INACT_MS);
+    }
+    function bumpActivity(){ startInactivityTimer(); }
+
+    /* Elements */
+    const cardWrap = document.getElementById("cardWrap");
+    const category = document.getElementById("category");
+    const question = document.getElementById("question");
+    const overlay = document.getElementById("overlay");
+    const resultTitle = document.getElementById("resultTitle");
+    const resultInfo = document.getElementById("resultInfo");
+    const finalScore = document.getElementById("finalScore");
+    const scoreCount = document.getElementById("scoreCount");
+    const totalCount = document.getElementById("totalCount");
+    const btnYes = document.getElementById("btnYes");
+    const btnNo = document.getElementById("btnNo");
+    const btnReset = document.getElementById("btnReset");
+    const btnReplay = document.getElementById("btnReplay");
+    const btnNext = document.getElementById("btnNext");
+    const leftLabel = document.getElementById("leftLabel");
+    const rightLabel = document.getElementById("rightLabel");
+    const btnSettings = document.getElementById("btnSettings");
+    const settingsPanel = document.getElementById("settingsPanel");
+    const brandTitle = document.getElementById("brandTitle");
+    const modeClick = document.getElementById("modeClick");
+    const modeFact = document.getElementById("modeFact");
+    const progressText = document.getElementById("progressText");
+
+    const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
+    const bank   = () => (gameMode === "click" ? clickQuestions : factQuestions);
+    const setBrand = () => brandTitle.textContent = (gameMode === "click" ? "Würdest du klicken?" : "Fake oder Fakt");
+
+    function updateProgress(){
+      const total = questions.length || 0;
+      const current = Math.min(index + 1, Math.max(total, 1));
+      progressText.textContent = (total ? `Frage ${current} von ${total}` : '—');
+    }
+
+    /* Labels */
+    function clearDragLabels(){
+      for (const el of [leftLabel,rightLabel]){
+        el.style.opacity = 0;
+        el.style.display = "none";
+        el.textContent = "";
+      }
+    }
+    function showLabel(el, text, op){
+      el.textContent = text;
+      el.style.display = "block";
+      el.style.opacity = op;
+    }
+
+    function showQuestion(){
+      const q = questions[index];
+      category.textContent = q.category;
+      question.textContent = q.text;
+      setLocalImage(qImage, q.img || IMG_PLACEHOLDER);
+      qImage.alt = "Bild zur Frage";
+
+      cardWrap.style.transition = "transform .2s ease, opacity .4s ease";
+      cardWrap.style.transform = "translateX(0) rotate(0)";
+      cardWrap.style.opacity = 1;
+      cardWrap.style.visibility = "visible";
+      clearDragLabels();
+      animating = false; canSwipe = true;
+
+      updateProgress();
+    }
+
+    function showOverlay(isCorrect, userAnswer){
+      clearDragLabels();
+      cardWrap.style.transition = "none";
+      cardWrap.style.transform = "translateX(0) rotate(0)";
+      cardWrap.style.opacity = 1;
+      cardWrap.style.visibility = "hidden";
+
+      resultTitle.textContent = isCorrect ? "Richtig!" : "Leider falsch";
+      const q = questions[index];
+      const infoText = (q.infoYes && q.infoNo) ? (userAnswer ? q.infoYes : q.infoNo) : q.info;
+      resultInfo.textContent = infoText;
+      overlay.className = "overlay";
+      overlay.classList.add("show", isCorrect ? "correct" : "wrong");
+      canSwipe = false;
+    }
+    function hideOverlay(){
+      overlay.className = "overlay";
+      canSwipe = true;
+    }
+
+    function flyOut(direction){
+      animating = true;
+      const rotate = direction === "right" ? 18 : -18;
+      const translateX = direction === "right" ? "140%" : "-140%";
+      cardWrap.style.transition = "transform .35s ease, opacity .35s ease";
+      cardWrap.style.transform = `translateX(${translateX}) rotate(${rotate}deg)`;
+      cardWrap.style.opacity = 0;
+    }
+
+    function handleSwipe(direction){
+      if (animating || !canSwipe) return;
+      bumpActivity();
+      clearDragLabels();
+      flyOut(direction);
+      setTimeout(() => {
+        const userAnswer = (direction === "right");
+        const isCorrect = questions[index].correct === userAnswer;
+        if (isCorrect) score++;
+        showOverlay(isCorrect, userAnswer);
+      }, 360);
+    }
+
+    function nextQuestion(){
+      bumpActivity();
+      hideOverlay();
+      index++;
+      if (index < questions.length) showQuestion();
+      else showScore();
+    }
+
+    function showScore(){
+      scoreCount.textContent = String(score);
+      totalCount.textContent = String(questions.length);
+      document.querySelector(".stage").style.display = "none";
+      finalScore.style.display = "block";
+      // Progress on score screen: freeze at total
+      progressText.textContent = `Frage ${questions.length} von ${questions.length}`;
+    }
+
+    function resetGame(){
+      index = 0; score = 0;
+      questions = shuffle(bank()).slice(0,6);
+      document.querySelector(".stage").style.display = "grid";
+      finalScore.style.display = "none";
+      hideOverlay();
+      setBrand();
+      updateProgress();
+      showQuestion();
+      startInactivityTimer(); // restart inactivity timer at each round start
+    }
+
+    function updateDragLabel(deltaX){
+      if (!canSwipe || animating || index >= questions.length) return;
+      const isRight = deltaX > 0;
+      const cat = questions[index].category;
+      const txt = cat.includes("Fake") ? (isRight ? "FAKT" : "FAKE") : (isRight ? "JA" : "NEIN");
+      const op = Math.min(Math.abs(deltaX)/80,1);
+      if (isRight){
+        showLabel(rightLabel, txt, op);
+        leftLabel.style.opacity = 0; leftLabel.style.display = "none";
+      } else {
+        showLabel(leftLabel, txt, op);
+        rightLabel.style.opacity = 0; rightLabel.style.display = "none";
+      }
+    }
+
+    /* Touch */
+    cardWrap.addEventListener("touchstart", e => { if(!canSwipe||animating) return; startX = e.touches[0].clientX; bumpActivity(); }, {passive:true});
+    cardWrap.addEventListener("touchmove",  e => {
+      if(!canSwipe||animating) return;
+      const dx = e.touches[0].clientX - startX;
+      cardWrap.style.transition = "none";
+      cardWrap.style.transform = `translateX(${dx}px) rotate(${dx/18}deg)`;
+      updateDragLabel(dx);
+    }, {passive:true});
+    cardWrap.addEventListener("touchend",   e => {
+      if(!canSwipe||animating) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      if (Math.abs(dx) > 70) handleSwipe(dx > 0 ? "right" : "left");
+      else {
+        cardWrap.style.transition = "transform .2s ease";
+        cardWrap.style.transform = "translateX(0) rotate(0)";
+        clearDragLabels();
+      }
+      bumpActivity();
+    });
+
+    /* Mouse (testing) */
+    let mDown=false, mStart=0, mDx=0;
+    cardWrap.addEventListener("mousedown", e => { if(!canSwipe||animating) return; mDown=true; mStart=e.clientX; bumpActivity(); });
+    window.addEventListener("mousemove", e => {
+      if(!mDown||!canSwipe||animating) return;
+      mDx = e.clientX - mStart;
+      cardWrap.style.transition = "none";
+      cardWrap.style.transform = `translateX(${mDx}px) rotate(${mDx/18}deg)`;
+      updateDragLabel(mDx);
+    });
+    window.addEventListener("mouseup", () => {
+      if(!mDown||!canSwipe||animating) return;
+      mDown=false;
+      if (Math.abs(mDx) > 90) handleSwipe(mDx > 0 ? "right" : "left");
+      else {
+        cardWrap.style.transition = "transform .2s ease";
+        cardWrap.style.transform = "translateX(0) rotate(0)";
+        clearDragLabels();
+      }
+      mDx=0;
+      bumpActivity();
+    });
+
+    /* Buttons */
+    btnYes.addEventListener("click", () => { bumpActivity(); handleSwipe("right"); });
+    btnNo .addEventListener("click", ()  => { bumpActivity(); handleSwipe("left");  });
+    btnReset.addEventListener("click", () => { bumpActivity(); resetGame(); });
+    btnReplay.addEventListener("click", () => { bumpActivity(); resetGame(); });
+    btnNext  .addEventListener("click", () => { bumpActivity(); nextQuestion(); });
+
+    /* Settings + Mode persistence */
+    let settingsOpen=false;
+    btnSettings.addEventListener("click", () => {
+      settingsOpen = !settingsOpen;
+      settingsPanel.style.display = settingsOpen ? "block" : "none";
+      bumpActivity();
+    });
+    document.addEventListener("click", e => {
+      if(!settingsOpen) return;
+      if(!settingsPanel.contains(e.target) && e.target !== btnSettings){
+        settingsPanel.style.display="none"; settingsOpen=false;
+      }
+    });
+
+    function applyModeToUI(){
+      setBrand();
+      modeClick.checked = (gameMode === 'click');
+      modeFact.checked  = (gameMode === 'fact');
+    }
+    function setMode(newMode){
+      if (newMode !== 'click' && newMode !== 'fact') return;
+      if (gameMode === newMode) { applyModeToUI(); return; }
+      gameMode = newMode;
+      saveMode(gameMode);
+      applyModeToUI();
+      resetGame();
+    }
+    modeClick.addEventListener("change", ()=>{ if(modeClick.checked){ setMode("click"); bumpActivity(); }});
+    modeFact .addEventListener("change", ()=>{ if(modeFact.checked ){ setMode("fact");  bumpActivity(); }});
+
+    /* Global interactions also count as activity */
+    ['keydown','pointerdown','pointermove'].forEach(ev =>
+      document.addEventListener(ev, bumpActivity, {passive:true})
+    );
+
+    /* Start */
+    (function init(){
+      const saved = loadSavedMode();
+      gameMode = saved ?? 'click';
+      applyModeToUI();
+      resetGame();        // fresh round on load in last chosen mode
+      startInactivityTimer();
+    })();
+  </script>
+</body>
+</html>
